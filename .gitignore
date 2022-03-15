@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/AzureSignToolClickOnce/bin/Debug
+/AzureSignToolClickOnce/bin/Release
+/AzureSignToolClickOnce/obj
+/AzureSignToolClickOnce/Utils/AzureSign.Core/obj
+/.vs
