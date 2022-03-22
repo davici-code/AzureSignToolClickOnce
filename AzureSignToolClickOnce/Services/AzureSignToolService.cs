@@ -30,18 +30,39 @@ namespace AzureSignToolClickOnce.Services
             // Then the nested clickonce/vsto file
             // finally the top-level clickonce/vsto file
 
-            var files = Directory.GetFiles(path, "*.*").ToList();
-            files.AddRange(Directory.GetFiles(path + @"\Application Files", "*.*", SearchOption.AllDirectories));
-            for (int i = 0; i < files.Count; i++)
+            // MAM: Handle Deploy files. Get Rawfiles first.
+            var rawfiles = Directory.GetFiles(path, "*.*").ToList();
+            rawfiles.AddRange(Directory.GetFiles(path + @"\Application Files", "*.*", SearchOption.AllDirectories));
+            for (int i = 0; i < rawfiles.Count; i++)
             {
-                string file = files[i];
-                files[i] = file.Replace(@"\\", @"\");
+                string file = rawfiles[i];
+                rawfiles[i] = file.Replace(@"\\", @"\");
+            }
+
+            List<string> files = new List<string>();
+
+            // Rename deploy files if needed and track renames
+            List<string> deployFiles = new List<string>();
+            foreach (string filename in rawfiles)
+            {
+                if (filename.EndsWith(".deploy", StringComparison.OrdinalIgnoreCase))
+                {
+                    FileInfo info = new FileInfo(filename);
+                    string newName = filename.Substring(0, filename.Length - 7);
+                    info.MoveTo(newName);
+                    deployFiles.Add(newName);
+                    files.Add(newName);
+                }
+                else
+                {
+                    files.Add(filename);
+                }
             }
 
             var filesToSign = new List<string>();
             var setupExe = files.Where(f => ".exe".Equals(Path.GetExtension(f), StringComparison.OrdinalIgnoreCase));
             filesToSign.AddRange(setupExe);
-
+            
             var manifestFile = files.SingleOrDefault(f => ".manifest".Equals(Path.GetExtension(f), StringComparison.OrdinalIgnoreCase));
             if (string.IsNullOrEmpty(manifestFile))
             {
@@ -75,6 +96,12 @@ namespace AzureSignToolClickOnce.Services
                 {
                     throw new Exception($"Could not sign {f}");
                 }
+            }
+
+            // rename deploy files back to original
+            foreach (string filename in deployFiles)
+            {
+                File.Move(filename, filename.Trim() + ".deploy");
             }
         }
 
