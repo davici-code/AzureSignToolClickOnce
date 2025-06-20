@@ -32,7 +32,10 @@ namespace AzureSignToolClickOnce.Services
 
             // MAM: Handle Deploy files. Get Rawfiles first.
             var rawfiles = Directory.GetFiles(path, "*.*").ToList();
-            rawfiles.AddRange(Directory.GetFiles(path + @"\Application Files", "*.*", SearchOption.AllDirectories));
+            if(Directory.Exists(path + @"\Application Files"))
+            {
+                rawfiles.AddRange(Directory.GetFiles(path + @"\Application Files", "*.*", SearchOption.AllDirectories));
+            }
             for (int i = 0; i < rawfiles.Count; i++)
             {
                 string file = rawfiles[i];
@@ -89,9 +92,12 @@ namespace AzureSignToolClickOnce.Services
                                             .Select(f => f.file)
                                             .ToList();
 
+            // Get relative path to the manifest file
+            var manifestRelativePath = GetRelativeFilePath(manifestFile, path);
+
             foreach (var f in clickOnceFilesToSign)
             {
-                fileArgs = $@"-update ""{f}"" {args} -appm ""{manifestFile}""";
+                fileArgs = $@"-update ""{f}"" {args} -appm ""{manifestFile}"" -appc ""{manifestRelativePath}""";
                 if (!RunMageTool(fileArgs, f, rsa, certificate, timeStampUrl))
                 {
                     throw new Exception($"Could not sign {f}");
@@ -103,6 +109,15 @@ namespace AzureSignToolClickOnce.Services
             {
                 File.Move(filename, filename.Trim() + ".deploy");
             }
+        }
+
+        private string GetRelativeFilePath(string filePath, string basePath)
+        {
+            if (filePath.Contains(basePath))
+            {
+                return filePath.Substring(basePath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            return filePath;
         }
 
         private void SignInAzureVault(string description, string supportUrl, string timeStampUrlRfc3161, X509Certificate2 certificate, RSA rsaPrivateKey, List<string> filesToSign)
