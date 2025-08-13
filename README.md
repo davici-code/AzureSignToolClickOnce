@@ -1,7 +1,11 @@
 # Introduction 
 Azure ClickOnce Sign Tool
 
-# Usage
+# Compiling to a single EXE for deployment
+If you want a single exe for distribution (windows platform), run the powershell script in the root dir. This simply uses ilrepack (the modern ilmerge)
+to combine the build exe with the dlls. The script runs from debug, but easy to edit to run from release. It creates a file called AzureKeyVaultSigner.exe
+
+# Usage (If using the compiled exe above, the executable is AzureKeyVaultSigner)
 
 AzureSignToolClickOnce.exe ^\
  -p=bin\Release\app.publish\^\
