@@ -17,7 +17,6 @@ namespace AzureSignToolClickOnce
             var clientSecret = string.Empty;
             var certName = string.Empty;
 
-
             foreach (string arg in args)
             {
                 if (!arg.StartsWith("-") || arg.Length < 4)
