@@ -32,7 +32,7 @@ namespace AzureSignToolClickOnce.Services
 
             // MAM: Handle Deploy files. Get Rawfiles first.
             var rawfiles = Directory.GetFiles(path, "*.*").ToList();
-            if(Directory.Exists(path + @"\Application Files"))
+            if (Directory.Exists(path + @"\Application Files"))
             {
                 rawfiles.AddRange(Directory.GetFiles(path + @"\Application Files", "*.*", SearchOption.AllDirectories));
             }
@@ -65,7 +65,7 @@ namespace AzureSignToolClickOnce.Services
             var filesToSign = new List<string>();
             var setupExe = files.Where(f => ".exe".Equals(Path.GetExtension(f), StringComparison.OrdinalIgnoreCase));
             filesToSign.AddRange(setupExe);
-            
+
             var manifestFile = files.SingleOrDefault(f => ".manifest".Equals(Path.GetExtension(f), StringComparison.OrdinalIgnoreCase));
             if (string.IsNullOrEmpty(manifestFile))
             {
@@ -146,7 +146,22 @@ namespace AzureSignToolClickOnce.Services
                 }
             };
             Console.WriteLine($"Signing {signtool.StartInfo.FileName} {args}");
+            signtool.OutputDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    Console.WriteLine($"Mage Out {e.Data}"); ;
+            };
+            signtool.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    Console.WriteLine($"Mage Err {e.Data}");
+            };
+
             signtool.Start();
+
+            signtool.BeginOutputReadLine();
+            signtool.BeginErrorReadLine();
+
             signtool.WaitForExit();
 
             if (signtool.ExitCode == 0)
@@ -154,16 +169,6 @@ namespace AzureSignToolClickOnce.Services
                 Console.WriteLine($"Manifest signing {inputFile}");
                 ManifestSigner.SignFile(inputFile, rsa, publicCertificate, timestampUrl);
                 return true;
-            }
-            else
-            {
-                var output = signtool.StandardOutput.ReadToEnd();
-                var error = signtool.StandardError.ReadToEnd();
-                Debug.WriteLine($"Mage Out {output}");
-                if (!string.IsNullOrWhiteSpace(error))
-                {
-                    Console.WriteLine($"Mage Err {error}");
-                }
             }
 
             Console.WriteLine($"Error: Signtool returned {signtool.ExitCode}");
