@@ -65,35 +65,39 @@ namespace AzureSignToolClickOnce
             }
             Console.WriteLine($"Path: {path}");
 
+            // Exit non-zero on a missing option, otherwise a misconfigured build step
+            // looks like it succeeded.
             if (string.IsNullOrEmpty(keyVaultUrl))
             {
                 Console.WriteLine($"Missing option -azure-key-vault-url");
-                return;
-            }
-            if (string.IsNullOrEmpty(clientId))
-            {
-                Console.WriteLine($"Missing option -azure-key-vault-client-id");
-                return;
-            }
-            if (string.IsNullOrEmpty(clientSecret))
-            {
-                Console.WriteLine($"Missing option -azure-key-vault-client-secret");
-                return;
-            }
-            if (string.IsNullOrEmpty(ADTenantId))
-            {
-                Console.WriteLine($"Missing option -azure-key-vault-tenant-id");
-                return;
+                Environment.Exit(1);
             }
             if (string.IsNullOrEmpty(certName))
             {
                 Console.WriteLine($"Missing option -azure-key-vault-certificate");
-                return;
+                Environment.Exit(1);
             }
             if (string.IsNullOrEmpty(description))
             {
                 Console.WriteLine($"Missing option -description");
-                return;
+                Environment.Exit(1);
+            }
+
+            // Client id and secret are optional. Supply them for service principal
+            // authentication; omit them to fall back on the ambient Azure identity
+            // ("az login" locally, managed identity or workload identity in CI).
+            if (!string.IsNullOrEmpty(clientSecret))
+            {
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    Console.WriteLine($"Missing option -azure-key-vault-client-id (required with -azure-key-vault-client-secret)");
+                    Environment.Exit(1);
+                }
+                if (string.IsNullOrEmpty(ADTenantId))
+                {
+                    Console.WriteLine($"Missing option -azure-key-vault-tenant-id (required with -azure-key-vault-client-secret)");
+                    Environment.Exit(1);
+                }
             }
             if (string.IsNullOrEmpty(timeStampUrl))
             {

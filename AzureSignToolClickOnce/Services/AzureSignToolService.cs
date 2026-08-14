@@ -1,4 +1,5 @@
-﻿using Azure.Identity;
+﻿using Azure.Core;
+using Azure.Identity;
 using Azure.Security.KeyVault.Certificates;
 using AzureSign.Core;
 using AzureSignToolClickOnce.Utils;
@@ -18,7 +19,26 @@ namespace AzureSignToolClickOnce.Services
         private string _magetoolPath = @"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\mage.exe";
         public void Start(string description, string path, string timeStampUrl, string timeStampUrlRfc3161, string keyVaultUrl, string tenantId, string clientId, string clientSecret, string certName)
         {
-            var tokenCredential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+            TokenCredential tokenCredential;
+            if (string.IsNullOrEmpty(clientSecret))
+            {
+                // No client secret supplied - use the ambient Azure identity instead.
+                // This covers "az login" locally, and managed identity or workload
+                // identity federation in CI, so no secret has to be stored or rotated.
+                var options = new DefaultAzureCredentialOptions();
+                if (!string.IsNullOrEmpty(tenantId))
+                {
+                    options.TenantId = tenantId;
+                }
+                tokenCredential = new DefaultAzureCredential(options);
+                Console.WriteLine("Authenticating with DefaultAzureCredential (az login / managed identity)");
+            }
+            else
+            {
+                tokenCredential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                Console.WriteLine("Authenticating with ClientSecretCredential");
+            }
+
             var client = new CertificateClient(vaultUri: new Uri(keyVaultUrl), credential: tokenCredential);
             var cert = client.GetCertificate(certName).Value;
             var certificate = new X509Certificate2(cert.Cer);
