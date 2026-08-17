@@ -1,4 +1,9 @@
 # PowerShell script to merge assemblies using ILMerge
+param(
+    # The merged exe is what gets distributed, so default to optimised Release output.
+    [string] $Configuration = 'Release'
+)
+
 Write-Host "Starting ILMerge process..." -ForegroundColor Green
 Write-Host
 
@@ -6,7 +11,7 @@ Write-Host
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
-$SourceDir = ".\AzureSignToolClickOnce\bin\Debug"
+$SourceDir = ".\AzureSignToolClickOnce\bin\$Configuration"
 $OutputDir = ".\"
 $MainExe = "AzureSignToolClickOnce.exe"
 $OutputExe = "AzureKeyVaultSigner.exe"
